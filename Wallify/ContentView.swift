@@ -104,18 +104,19 @@ struct VideoSettingsView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            VideoPlayer(player: wallpaperManager.contentURL.map { AVPlayer(url: $0) })
-                .frame(minHeight: 200, maxHeight: .infinity)
-                .background(Color.black)
-                .cornerRadius(8)
-                .overlay(
-                    Group {
-                        if wallpaperManager.contentURL == nil {
-                            Text("Select a video to see a preview")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                )
+            if let player = wallpaperManager.contentURL.map({ AVPlayer(url: $0) }) {
+                VideoPlayerView(player: player)
+                    .frame(minHeight: 200, maxHeight: .infinity)
+                    .background(Color.black)
+                    .cornerRadius(8)
+            } else {
+                ZStack {
+                    Color.black
+                        .cornerRadius(8)
+                    Text("Select a video to see a preview")
+                        .foregroundColor(.secondary)
+                }
+            }
             
             // Bottom Controls
             HStack {
@@ -150,6 +151,21 @@ struct VideoSettingsView: View {
     }
 }
 
+// MARK: - VideoPlayer compatibility
+struct VideoPlayerView: NSViewRepresentable {
+    var player: AVPlayer
+
+    func makeNSView(context: Context) -> AVPlayerView {
+        let view = AVPlayerView()
+        view.player = player
+        view.controlsStyle = .inline
+        return view
+    }
+
+    func updateNSView(_ nsView: AVPlayerView, context: Context) {
+        nsView.player = player
+    }
+}
 
 // MARK: - Data Model for Sidebar
 enum Category: String, CaseIterable, Identifiable {
@@ -171,7 +187,6 @@ enum Category: String, CaseIterable, Identifiable {
         }
     }
 }
-
 
 // MARK: - SwiftUI Preview
 #Preview("No video selected") {
