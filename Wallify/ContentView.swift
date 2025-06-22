@@ -69,6 +69,7 @@ struct DetailView: View {
 struct VideoSettingsView: View {
     @EnvironmentObject var wallpaperManager: WallpaperManager
     private let fileSelectionManager = FileSelectionManager()
+    @StateObject private var recentWallpapersManager = RecentWallpapersManager.shared
     @State private var isMuted = true
 
     var body: some View {
@@ -98,6 +99,15 @@ struct VideoSettingsView: View {
                 }
             }
             .padding(.bottom)
+
+            if !recentWallpapersManager.recentWallpapers.isEmpty {
+                RecentWallpapersView(
+                    recentWallpapers: recentWallpapersManager.recentWallpapers,
+                    onSelect: { url in
+                        wallpaperManager.contentURL = url
+                    }
+                )
+            }
 
             // Preview Section
             Text("Preview")
@@ -148,6 +158,46 @@ struct VideoSettingsView: View {
             }
         }
         .padding()
+    }
+}
+
+// MARK: - Recent Wallpapers View
+struct RecentWallpapersView: View {
+    let recentWallpapers: [URL]
+    let onSelect: (URL) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Recent")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .padding(.bottom, 2)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 15) {
+                    ForEach(recentWallpapers, id: \.self) { url in
+                        Button(action: {
+                            onSelect(url)
+                        }) {
+                            VStack {
+                                Image(systemName: "film")
+                                    .font(.title)
+                                    .frame(width: 80, height: 60)
+                                    .background(Color.secondary.opacity(0.15))
+                                    .cornerRadius(8)
+                                Text(url.lastPathComponent)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .frame(width: 80)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(.bottom)
     }
 }
 
