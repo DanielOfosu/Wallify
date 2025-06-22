@@ -1,10 +1,11 @@
 import Cocoa
-import SwiftUI
-import WebKit
+import AVKit
+import Combine
 
 class WallpaperWindowController: NSWindowController {
-
-    private var webView: WKWebView?
+    private var player: AVPlayer?
+    private var playerLayer: AVPlayerLayer?
+    private var settingsSubscription: AnyCancellable?
 
     convenience init() {
         let window = NSWindow(contentRect: .zero,
@@ -19,63 +20,75 @@ class WallpaperWindowController: NSWindowController {
         window.ignoresMouseEvents = true
         
         self.init(window: window)
+        setupPlayerView()
+        observeSettings()
     }
 
-    func setupContentView() {
-        // Configure the web view for autoplaying media
-        let configuration = WKWebViewConfiguration()
-        configuration.mediaTypesRequiringUserActionForPlayback = []
+    private func setupPlayerView() {
+        let playerView = NSView()
+        playerView.wantsLayer = true
+        window?.contentView = playerView
+        
+        playerLayer = AVPlayerLayer()
+        playerLayer?.videoGravity = .resizeAspectFill
+        playerView.layer?.addSublayer(playerLayer!)
 
-        // Create and configure the web view
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.translatesAutoresizingMaskIntoConstraints = false
-        self.webView = webView
-        
-        // Set the web view as the window's content view
-        window?.contentView = webView
-        
-        // Set the window frame to cover the entire screen
         if let screen = NSScreen.main {
             window?.setFrame(screen.frame, display: true)
+            playerLayer?.frame = screen.frame
         }
         
-        // Show the window
         window?.orderBack(nil)
     }
     
     func loadURL(_ url: URL) {
-        // For web content (like YouTube), load it directly.
-        if !url.isFileURL {
-            webView?.load(URLRequest(url: url))
-            return
-        }
-
-        // For local files, we must embed the video data directly into the HTML
-        // to work reliably within the sandbox.
-        guard let videoData = try? Data(contentsOf: url) else {
-            print("Failed to load video data from URL: \(url)")
-            return
-        }
+        player = AVPlayer(url: url)
+        player?.isMuted = true
+        player?.actionAtItemEnd = .none
         
-        // Encode the video data as Base64 and create a data URL.
-        let base64Data = videoData.base64EncodedString()
-        let dataURLString = "data:video/mp4;base64,\(base64Data)"
-
-        guard let htmlTemplatePath = Bundle.main.path(forResource: "VideoPlayer", ofType: "html"),
-              let htmlTemplate = try? String(contentsOfFile: htmlTemplatePath) else {
-            print("Failed to load VideoPlayer.html from bundle.")
-            return
-        }
+        playerLayer?.player = player
+        applySettings()
+        player?.play()
         
-        // Inject the data URL into our HTML template.
-        let finalHTML = htmlTemplate.replacingOccurrences(of: "VIDEO_URL_PLACEHOLDER", with: dataURLString)
-        
-        // Load the self-contained HTML.
-        webView?.loadHTMLString(finalHTML, baseURL: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(playerItemDidReachEnd),
+                                               name: .AVPlayerItemDidPlayToEndTime,
+                                               object: player?.currentItem)
     }
     
+    @objc private func playerItemDidReachEnd(notification: NSNotification) {
+        if let playerItem = notification.object as? AVPlayerItem {
+            playerItem.seek(to: .zero, completionHandler: nil)
+        }
+    }
+    
+    private func observeSettings() {
+        settingsSubscription = SettingsManager.shared.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.applySettings()
+            }
+        }
+    }
+    
+    private func applySettings() {
+        guard let player = player, let item = player.currentItem else { return }
+        
+        let settings = SettingsManager.shared
+        
+        // Adjust preferredPeakBitRate based on quality setting
+        let quality = settings.videoQuality
+        if quality > 0.8 {
+            item.preferredPeakBitRate = 0 // Unrestricted
+        } else if quality > 0.5 {
+            item.preferredPeakBitRate = 2_000_000 // High
+        } else {
+            item.preferredPeakBitRate = 1_000_000 // Medium
+        }
+    }
+
     func stop() {
-        // Load a blank page to effectively stop the content
-        webView?.load(URLRequest(url: URL(string:"about:blank")!))
+        player?.pause()
+        player = nil
+        playerLayer?.player = nil
     }
 }

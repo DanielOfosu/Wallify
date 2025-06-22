@@ -16,7 +16,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create and set up the wallpaper window
         wallpaperWindowController = WallpaperWindowController()
-        wallpaperWindowController?.setupContentView()
         
         // Observe video URL changes to control the wallpaper
         wallpaperManager.$contentURL
