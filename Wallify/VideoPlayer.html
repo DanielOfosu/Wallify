@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Wallpaper</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black; /* A black background for when the video is loading */
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* This is the key to 'Aspect Fill' and removes gray bars */
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+      - The 'autoplay', 'loop', and 'muted' attributes ensure the video plays automatically.
+      - 'playsinline' is important for compatibility.
+      - We explicitly don't add the 'controls' attribute to hide the playbar.
+    -->
+    <video src="VIDEO_URL_PLACEHOLDER" autoplay loop muted playsinline></video>
+</body>
+</html> 
