@@ -22,6 +22,7 @@ struct ContentView: View {
         }
         .navigationTitle("Wallify")
         .frame(minWidth: 800, minHeight: 600)
+        .accessibilityIdentifier("settings_view")
     }
 }
 
@@ -70,94 +71,67 @@ struct VideoSettingsView: View {
     @EnvironmentObject var wallpaperManager: WallpaperManager
     private let fileSelectionManager = FileSelectionManager()
     @StateObject private var recentWallpapersManager = RecentWallpapersManager.shared
-    @State private var isMuted = true
+    @State private var isTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Top Section: File Selection
-            HStack(spacing: 15) {
-                Image(systemName: "film")
-                    .font(.system(size: 40))
-                    .frame(width: 80, height: 60)
-                    .background(Color.secondary.opacity(0.15))
-                    .cornerRadius(8)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Button {
-                        fileSelectionManager.selectVideoFile { url in
-                            wallpaperManager.contentURL = url
-                        }
-                    } label: {
-                        Label("Select Video", systemImage: "folder")
-                    }
-                    
-                    Text(wallpaperManager.contentURL?.lastPathComponent ?? "No file selected")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Video Wallpaper")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                Spacer()
+                Button("Select New Video...", action: selectVideo)
             }
-            .padding(.bottom)
 
-            if !recentWallpapersManager.recentWallpapers.isEmpty {
+            if recentWallpapersManager.recentWallpapers.isEmpty {
+                VStack {
+                    Spacer()
+                    Image(systemName: "film.fill")
+                        .font(.system(size: 50))
+                        .padding(.bottom, 10)
+                    Text("No Recent Videos")
+                        .font(.title3)
+                    Text("Drop a video file here to get started.")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
                 RecentWallpapersView(
                     recentWallpapers: recentWallpapersManager.recentWallpapers,
                     onSelect: { url in
-                        wallpaperManager.contentURL = url
+                        wallpaperManager.setContentURL(url)
                     }
                 )
             }
-
-            // Preview Section
-            Text("Preview")
-                .font(.title2)
-                .fontWeight(.semibold)
-            
-            if let player = wallpaperManager.contentURL.map({ AVPlayer(url: $0) }) {
-                VideoPlayerView(player: player)
-                    .frame(minHeight: 200, maxHeight: .infinity)
-                    .background(Color.black)
-                    .cornerRadius(8)
-            } else {
-                ZStack {
-                    Color.black
-                        .cornerRadius(8)
-                    Text("Select a video to see a preview")
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Bottom Controls
-            HStack {
-                Button {
-                    // The wallpaper is already set automatically by the manager
-                } label: {
-                    Label("Set Wallpaper", systemImage: "display")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(wallpaperManager.contentURL == nil)
-                
-                Picker("Aspect Fill", selection: .constant("Aspect Fill")) {
-                    Text("Aspect Fill").tag("Aspect Fill")
-                    Text("Aspect Fit").tag("Aspect Fit")
-                    Text("Stretch").tag("Stretch")
-                }
-                .pickerStyle(.menu)
-                .frame(width: 140)
-
-                Picker("All Monitors", selection: .constant("All Monitors")) {
-                    Text("All Monitors").tag("All Monitors")
-                }
-                .pickerStyle(.menu)
-                .frame(width: 140)
-                
-                Spacer()
-                
-                Toggle("Mute", isOn: $isMuted)
-            }
         }
         .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(isTargeted ? Color.accentColor.opacity(0.2) : Color.clear)
+        .cornerRadius(12)
+        .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+            handleDrop(providers: providers)
+        }
+    }
+
+    private func selectVideo() {
+        fileSelectionManager.selectVideoFile { url in
+            if let url = url {
+                wallpaperManager.setContentURL(url)
+            }
+        }
+    }
+
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first else { return false }
+        _ = provider.loadObject(ofClass: URL.self) { url, _ in
+            if let url = url {
+                DispatchQueue.main.async {
+                    wallpaperManager.setContentURL(url)
+                }
+            }
+        }
+        return true
     }
 }
 
@@ -166,38 +140,73 @@ struct RecentWallpapersView: View {
     let recentWallpapers: [URL]
     let onSelect: (URL) -> Void
 
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Recent")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .padding(.bottom, 2)
+    private let columns = [
+        GridItem(.adaptive(minimum: 180))
+    ]
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 15) {
-                    ForEach(recentWallpapers, id: \.self) { url in
-                        Button(action: {
-                            onSelect(url)
-                        }) {
-                            VStack {
-                                Image(systemName: "film")
-                                    .font(.title)
-                                    .frame(width: 80, height: 60)
-                                    .background(Color.secondary.opacity(0.15))
-                                    .cornerRadius(8)
-                                Text(url.lastPathComponent)
-                                    .font(.caption)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .frame(width: 80)
-                            }
-                        }
-                        .buttonStyle(.plain)
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 20) {
+                ForEach(recentWallpapers, id: \.self) { url in
+                    Button(action: { onSelect(url) }) {
+                        VideoThumbnailView(url: url)
                     }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(.top)
         }
-        .padding(.bottom)
+    }
+}
+
+// MARK: - Video Thumbnail View
+struct VideoThumbnailView: View {
+    let url: URL
+    @State private var thumbnail: NSImage?
+
+    var body: some View {
+        VStack {
+            if let thumbnail = thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 120)
+                    .clipped()
+                    .cornerRadius(8)
+            } else {
+                ZStack {
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.15))
+                        .frame(height: 120)
+                        .cornerRadius(8)
+                    ProgressView()
+                }
+            }
+            Text(url.lastPathComponent)
+                .font(.caption)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+        .onAppear(perform: generateThumbnail)
+    }
+
+    private func generateThumbnail() {
+        DispatchQueue.global().async {
+            let asset = AVAsset(url: url)
+            let generator = AVAssetImageGenerator(asset: asset)
+            generator.appliesPreferredTrackTransform = true
+            let time = CMTime(seconds: 1, preferredTimescale: 60)
+            
+            do {
+                let cgImage = try generator.copyCGImage(at: time, actualTime: nil)
+                let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+                DispatchQueue.main.async {
+                    self.thumbnail = nsImage
+                }
+            } catch {
+                print("Error generating thumbnail: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
@@ -241,11 +250,11 @@ enum Category: String, CaseIterable, Identifiable {
 // MARK: - SwiftUI Preview
 #Preview("No video selected") {
     ContentView()
-        .environmentObject(WallpaperManager())
+        .environmentObject(WallpaperManager(workspaceManager: WorkspaceManager()))
 }
 
 #Preview("Video selected") {
-    let manager = WallpaperManager()
+    let manager = WallpaperManager(workspaceManager: WorkspaceManager())
     // Use a placeholder URL to test the UI without needing a real file
     manager.contentURL = URL(fileURLWithPath: "/path/to/your/awesome_wallpaper.mp4")
     
