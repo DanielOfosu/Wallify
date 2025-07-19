@@ -8,63 +8,106 @@
 import SwiftUI
 import AVKit
 
-// MARK: - Main Content View with Navigation
+// MARK: - Main Content View with Native Toolbar
 struct ContentView: View {
-    @State private var selectedCategory: Category? = .video
     @EnvironmentObject var wallpaperManager: WallpaperManager
+    @State private var showingSettings = false
+    @State private var showingAbout = false
 
     var body: some View {
-        NavigationSplitView {
-            SidebarView(selectedCategory: $selectedCategory)
-        } detail: {
-            DetailView(selectedCategory: $selectedCategory)
+        VStack(spacing: 0) {
+            // Main Content
+            EnhancedVideoView()
                 .environmentObject(wallpaperManager)
         }
-        .navigationTitle("Wallify")
-        .frame(minWidth: 800, minHeight: 600)
-        .accessibilityIdentifier("settings_view")
-    }
-}
-
-// MARK: - Sidebar Navigation
-struct SidebarView: View {
-    @Binding var selectedCategory: Category?
-
-    var body: some View {
-        List(Category.allCases, selection: $selectedCategory) { category in
-            NavigationLink(value: category) {
-                Label(category.rawValue, systemImage: category.icon)
+        .frame(minWidth: 1200, minHeight: 700)
+        .trueBlackBackground()
+        .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Text("Wallify")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+            }
+            
+            ToolbarItemGroup(placement: .automatic) {
+                HStack {
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            showingAbout = true
+                        }) {
+                            Image(systemName: "info.circle")
+                                .font(.title2)
+                        }
+                        .help("About Wallify")
+                        
+                        Button(action: {
+                            showingSettings = true
+                        }) {
+                            Image(systemName: "gear")
+                                .font(.title2)
+                        }
+                        .help("Settings")
+                    }
+                    
+                    Spacer()
+                }
             }
         }
-        .listStyle(.sidebar)
-    }
-}
-
-// MARK: - Detail View Router
-struct DetailView: View {
-    @Binding var selectedCategory: Category?
-    @EnvironmentObject var wallpaperManager: WallpaperManager
-
-    var body: some View {
-        switch selectedCategory {
-        case .video:
-            VideoSettingsView()
-                .environmentObject(wallpaperManager)
-        case .youtube:
-            YouTubeView()
-        case .web:
-            WebView()
-        case .preference:
-            PreferenceView()
-        case .about:
-            AboutView()
-        case .none:
-            Text("Select a category from the sidebar.")
-                .font(.largeTitle)
-                .foregroundColor(.secondary)
+        .sheet(isPresented: $showingSettings) {
+            VStack {
+                HStack {
+                    Button(action: {
+                        showingSettings = false
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut(.escape)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 15)
+                .padding(.bottom, 10)
+                
+                PreferenceView()
+            }
+            .frame(width: 500, height: 600)
+            .background(Color.black)
         }
+        .sheet(isPresented: $showingAbout) {
+            VStack {
+                HStack {
+                    Button(action: {
+                        showingAbout = false
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .font(.title2)
+                    }
+                    .buttonStyle(.borderless)
+                    .keyboardShortcut(.escape)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 15)
+                .padding(.bottom, 10)
+                
+                AboutView()
+            }
+            .frame(width: 400, height: 300)
+            .background(Color.black)
+        }
+        // Native toolbar handles window appearance automatically
     }
 }
+
+
 
 // MARK: - Video Settings View
 struct VideoSettingsView: View {
@@ -112,6 +155,7 @@ struct VideoSettingsView: View {
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             handleDrop(providers: providers)
         }
+        .trueBlackBackground()
     }
 
     private func selectVideo() {
@@ -157,6 +201,7 @@ struct RecentWallpapersView: View {
             }
             .padding(.top)
         }
+        .trueBlackBackground()
     }
 }
 
@@ -212,8 +257,8 @@ struct VideoThumbnailView: View {
     }
 }
 
-// MARK: - VideoPlayer compatibility
-struct VideoPlayerView: NSViewRepresentable {
+// MARK: - VideoPlayer compatibility (Legacy)
+struct LegacyVideoPlayerView: NSViewRepresentable {
     var player: AVPlayer
 
     func makeNSView(context: Context) -> AVPlayerView {
@@ -228,26 +273,7 @@ struct VideoPlayerView: NSViewRepresentable {
     }
 }
 
-// MARK: - Data Model for Sidebar
-enum Category: String, CaseIterable, Identifiable {
-    case video = "Video"
-    case youtube = "YouTube"
-    case web = "Web"
-    case preference = "Preference"
-    case about = "About"
 
-    var id: String { self.rawValue }
-
-    var icon: String {
-        switch self {
-        case .video: return "video"
-        case .youtube: return "play.tv"
-        case .web: return "safari"
-        case .preference: return "gear"
-        case .about: return "info.circle"
-        }
-    }
-}
 
 // MARK: - SwiftUI Preview
 struct ContentView_Previews: PreviewProvider {

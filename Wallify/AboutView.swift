@@ -26,7 +26,8 @@ struct AboutView: View {
                 .padding(.horizontal)
         }
         .padding()
-        .frame(maxWidth: 400)
+        .frame(minWidth: 300, maxWidth: 400)
+        .trueBlackBackground()
     }
 }
 

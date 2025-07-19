@@ -33,12 +33,33 @@ class WallpaperWindowController: NSWindowController {
         playerLayer?.videoGravity = .resizeAspectFill
         playerView.layer?.addSublayer(playerLayer!)
 
-        if let screen = NSScreen.main {
+        // Set initial display
+        updateDisplay()
+        
+        window?.orderBack(nil)
+    }
+    
+    private func updateDisplay() {
+        let settings = SettingsManager.shared
+        let targetDisplayID = settings.selectedDisplayID
+        
+        // Find the screen for the selected display
+        var targetScreen: NSScreen?
+        for screen in NSScreen.screens {
+            if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+               screenNumber == targetDisplayID {
+                targetScreen = screen
+                break
+            }
+        }
+        
+        // Fallback to main screen if target not found
+        let screen = targetScreen ?? NSScreen.main ?? NSScreen.screens.first
+        
+        if let screen = screen {
             window?.setFrame(screen.frame, display: true)
             playerLayer?.frame = screen.frame
         }
-        
-        window?.orderBack(nil)
     }
     
     func loadURL(_ url: URL) {
@@ -75,6 +96,12 @@ class WallpaperWindowController: NSWindowController {
         
         let settings = SettingsManager.shared
         
+        // Apply playback speed
+        player.rate = Float(settings.playbackSpeed)
+        
+        // Apply mute setting
+        player.isMuted = settings.isMuted
+        
         // Adjust preferredPeakBitRate based on quality setting
         let quality = settings.videoQuality
         if quality > 0.8 {
@@ -84,6 +111,19 @@ class WallpaperWindowController: NSWindowController {
         } else {
             item.preferredPeakBitRate = 1_000_000 // Medium
         }
+        
+        // Apply video gravity
+        switch settings.videoGravity {
+        case .fill:
+            playerLayer?.videoGravity = .resizeAspectFill
+        case .fit:
+            playerLayer?.videoGravity = .resizeAspect
+        case .stretch:
+            playerLayer?.videoGravity = .resize
+        }
+        
+        // Update display if needed
+        updateDisplay()
     }
 
     func stop() {

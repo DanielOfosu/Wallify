@@ -6,6 +6,53 @@
 //
 
 import SwiftUI
+import AppKit
+
+// MARK: - Custom View Modifier for True Black Background
+struct TrueBlackBackgroundModifier: ViewModifier {
+    @Environment(\.colorScheme) var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Group {
+                    if colorScheme == .dark {
+                        Color.black
+                    } else {
+                        Color(NSColor.windowBackgroundColor)
+                    }
+                }
+            )
+    }
+}
+
+// MARK: - Custom View Modifier for True Black Form Background
+struct TrueBlackFormBackgroundModifier: ViewModifier {
+    @Environment(\.colorScheme) var colorScheme
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Group {
+                    if colorScheme == .dark {
+                        Color.black
+                    } else {
+                        Color(NSColor.controlBackgroundColor)
+                    }
+                }
+            )
+    }
+}
+
+extension View {
+    func trueBlackBackground() -> some View {
+        self.modifier(TrueBlackBackgroundModifier())
+    }
+    
+    func trueBlackFormBackground() -> some View {
+        self.modifier(TrueBlackFormBackgroundModifier())
+    }
+}
 
 @main
 struct WallifyApp: App {
@@ -17,11 +64,34 @@ struct WallifyApp: App {
         WindowGroup(id: "main-window") {
             ContentView()
                 .environmentObject(appDelegate.wallpaperManager)
+                .trueBlackBackground()
+                .onAppear {
+                    // Set window appearance to true black
+                    if let window = NSApplication.shared.windows.first {
+                        // Force dark appearance
+                        window.appearance = NSAppearance(named: .darkAqua)
+                        
+                        // Set window background to black for content area
+                        window.backgroundColor = NSColor.black
+                        
+                        // Make title bar transparent and extend content
+                        window.titlebarAppearsTransparent = true
+                        window.titleVisibility = .hidden
+                        window.styleMask.insert(.fullSizeContentView)
+                        
+                        // Let the native toolbar handle the appearance
+                        // Remove custom title bar styling for native toolbar
+                    }
+                }
         }
+        .defaultSize(width: 1200, height: 800)
+        .windowResizability(.contentSize)
         
         // A menu bar icon with controls
-        MenuBarExtra("Wallify", systemImage: "play.circle") {
+        MenuBarExtra {
             MenuContent()
+        } label: {
+            AdaptiveMenuBarIcon()
         }
         .menuBarExtraStyle(.menu)
     }
@@ -34,8 +104,8 @@ struct MenuContent: View {
     var body: some View {
         Group {
             Button("Configure Wallpaper...") {
-                // This opens the main WindowGroup
-                openWindow(id: "main-window")
+                // Bring existing window to front or create new one if none exists
+                bringMainWindowToFront()
             }
 
             Divider()
@@ -44,5 +114,28 @@ struct MenuContent: View {
                 NSApplication.shared.terminate(nil)
             }
         }
+    }
+    
+    private func bringMainWindowToFront() {
+        // Find the main window and bring it to front
+        if let mainWindow = NSApplication.shared.windows.first(where: { window in
+            window.title == "Wallify" || window.identifier?.rawValue.contains("main-window") == true
+        }) {
+            // Window exists, bring it to front
+            mainWindow.makeKeyAndOrderFront(nil)
+            NSApplication.shared.activate(ignoringOtherApps: true)
+        } else {
+            // No window exists, create a new one
+            openWindow(id: "main-window")
+        }
+    }
+}
+
+// Adaptive menu bar icon that uses SF Symbols
+struct AdaptiveMenuBarIcon: View {
+    var body: some View {
+        Image(systemName: "photo.on.rectangle")
+            .resizable()
+            .frame(width: 16, height: 16)
     }
 }
