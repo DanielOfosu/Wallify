@@ -41,6 +41,7 @@ struct YouTubeView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(youtubeUrl.isEmpty)
+            .controlSize(.large)
             
             Spacer()
         }
@@ -70,7 +71,9 @@ struct YouTubeView: View {
     }
 }
 
-#Preview {
-    YouTubeView()
-        .environmentObject(WallpaperManager())
+struct YouTubeView_Previews: PreviewProvider {
+    static var previews: some View {
+        YouTubeView()
+            .environmentObject(WallpaperManager())
+    }
 } 

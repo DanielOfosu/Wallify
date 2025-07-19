@@ -100,7 +100,7 @@ struct VideoSettingsView: View {
                 RecentWallpapersView(
                     recentWallpapers: recentWallpapersManager.recentWallpapers,
                     onSelect: { url in
-                        wallpaperManager.setContentURL(url)
+                        wallpaperManager.contentURL = url
                     }
                 )
             }
@@ -117,7 +117,7 @@ struct VideoSettingsView: View {
     private func selectVideo() {
         fileSelectionManager.selectVideoFile { url in
             if let url = url {
-                wallpaperManager.setContentURL(url)
+                wallpaperManager.contentURL = url
             }
         }
     }
@@ -127,7 +127,7 @@ struct VideoSettingsView: View {
         _ = provider.loadObject(ofClass: URL.self) { url, _ in
             if let url = url {
                 DispatchQueue.main.async {
-                    wallpaperManager.setContentURL(url)
+                    wallpaperManager.contentURL = url
                 }
             }
         }
@@ -151,7 +151,8 @@ struct RecentWallpapersView: View {
                     Button(action: { onSelect(url) }) {
                         VideoThumbnailView(url: url)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
+                    .contentShape(Rectangle())
                 }
             }
             .padding(.top)
@@ -187,6 +188,7 @@ struct VideoThumbnailView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
+        .contentShape(Rectangle())
         .onAppear(perform: generateThumbnail)
     }
 
@@ -248,16 +250,23 @@ enum Category: String, CaseIterable, Identifiable {
 }
 
 // MARK: - SwiftUI Preview
-#Preview("No video selected") {
-    ContentView()
-        .environmentObject(WallpaperManager(workspaceManager: WorkspaceManager()))
-}
-
-#Preview("Video selected") {
-    let manager = WallpaperManager(workspaceManager: WorkspaceManager())
-    // Use a placeholder URL to test the UI without needing a real file
-    manager.contentURL = URL(fileURLWithPath: "/path/to/your/awesome_wallpaper.mp4")
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            ContentView()
+                .environmentObject(WallpaperManager())
+                .previewDisplayName("No video selected")
+            
+            ContentView()
+                .environmentObject(createManagerWithVideo())
+                .previewDisplayName("Video selected")
+        }
+    }
     
-    return ContentView()
-        .environmentObject(manager)
+    static func createManagerWithVideo() -> WallpaperManager {
+        let manager = WallpaperManager()
+        // Use a placeholder URL to test the UI without needing a real file
+        manager.contentURL = URL(fileURLWithPath: "/path/to/your/awesome_wallpaper.mp4")
+        return manager
+    }
 }

@@ -35,6 +35,7 @@ struct WebView: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(webUrl.isEmpty)
+            .controlSize(.large)
 
             Spacer()
         }
@@ -42,6 +43,8 @@ struct WebView: View {
     }
 }
 
-#Preview {
-    WebView()
+struct WebView_Previews: PreviewProvider {
+    static var previews: some View {
+        WebView()
+    }
 } 

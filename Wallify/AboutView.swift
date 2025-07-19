@@ -30,6 +30,8 @@ struct AboutView: View {
     }
 }
 
-#Preview {
-    AboutView()
+struct AboutView_Previews: PreviewProvider {
+    static var previews: some View {
+        AboutView()
+    }
 } 
