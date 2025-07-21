@@ -2,8 +2,12 @@
 
 A macOS app that lets you set video files as your desktop wallpaper.
 
+## Download
+
+<a href="https://github.com/DanielOfosu/Wallify/releases/tag/v0.1.0-alpha" target="_self"><img width="200" src="https://www.adviksoft.com/blog/wp-content/uploads/2023/09/editor_download_mac.png" /></a>
+
 > ⚠️ **Warning**  
-> We don't have an Apple Developer account yet. The application will show a popup on first start. Click Okay, then, go to Settings / Privacy & Security and scroll down until you see a button called Open anyway. You'll only have to do this once.
+> I don't have an Apple Developer account yet. The application will show a popup on first start. Click Okay, then, go to Settings / Privacy & Security and scroll down until you see a button called Open anyway. You'll only have to do this once.
 > 
 ## Features
 
