@@ -8,7 +8,10 @@ A macOS app that lets you set video files as your desktop wallpaper.
 
 > ⚠️ **Warning**  
 > I don't have an Apple Developer account yet. The application will show a popup on first start. Click Okay, then, go to Settings / Privacy & Security and scroll down until you see a button called Open anyway. You'll only have to do this once.
-> 
+
+## Preview
+<img width="1361" height="907" alt="Image" src="https://github.com/user-attachments/assets/2c944383-20fb-4582-bf79-f08e0f227a58" />
+
 ## Features
 
 - Set any video file as your desktop wallpaper
