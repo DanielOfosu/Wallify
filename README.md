@@ -74,4 +74,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Roadmap
 
-TBD 
+- Lockscreen implementation
+- Menu bar only implementation
+- CPU/Memory optimiztion
+- 
