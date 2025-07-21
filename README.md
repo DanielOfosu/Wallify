@@ -77,4 +77,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Lockscreen implementation
 - Menu bar only implementation
 - CPU/Memory optimiztion
-- 
+- Communicate why extended privileges are needed (Setting system wallpaper) in-app, instead of on first launch
