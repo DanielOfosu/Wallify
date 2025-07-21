@@ -61,19 +61,6 @@ xcodebuild -project Wallify.xcodeproj -scheme Wallify -configuration Debug
 - macOS 12.0 (Monterey) or later
 - Xcode 14.0 or later (for development)
 
-## Building
-
-```bash
-# Build release version
-./build_installer.sh
-
-# This creates:
-# - build/Wallify.app (standalone app)
-# - build/Wallify.pkg (package installer)
-# - build/Wallify.zip (compressed archive)
-# - build/Wallify-Installer.dmg (DMG installer)
-```
-
 ## Contributing
 
 We welcome contributions! Please open an issue or pull request.
