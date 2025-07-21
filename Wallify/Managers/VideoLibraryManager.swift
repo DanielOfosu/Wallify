@@ -59,7 +59,17 @@ class VideoLibraryManager: ObservableObject {
         
         // Create initial video item
         let videoItem = VideoItem(url: url)
-        videos.insert(videoItem, at: 0)
+        
+        // Check if this is a bundled video (from Resources folder)
+        let isBundledVideo = url.lastPathComponent.contains("hd_") || url.lastPathComponent.contains("uhd_")
+        
+        if isBundledVideo {
+            // Add bundled videos to the end (bottom of the list)
+            videos.append(videoItem)
+        } else {
+            // Add user videos to the beginning (top of the list, after "Add Video" button)
+            videos.insert(videoItem, at: 0)
+        }
         
         // Extract metadata asynchronously
         Task {
@@ -222,9 +232,14 @@ class VideoLibraryManager: ObservableObject {
         do {
             videos = try JSONDecoder().decode([VideoItem].self, from: data)
             selectedVideo = videos.first
+            
+            // Always check for bundled videos on app launch
+            loadBundledVideos()
         } catch {
             print("Error loading videos: \(error)")
             videos = []
+            // Load bundled videos even if there's an error
+            loadBundledVideos()
         }
     }
     
@@ -233,5 +248,79 @@ class VideoLibraryManager: ObservableObject {
         for url in recentURLs {
             addVideo(url)
         }
+        
+        // Load bundled videos on first launch
+        loadBundledVideos()
+    }
+    
+    // MARK: - Bundled Videos
+    
+    private func loadBundledVideos() {
+        // Get all video files directly from the bundle
+        let videoExtensions = ["mp4", "mov", "avi", "mkv", "webm", "m4v"]
+        
+        // Get all files in the bundle
+        guard let bundlePath = Bundle.main.resourcePath else {
+            print("Bundle resource path not found")
+            return
+        }
+        
+        do {
+            let bundleURL = URL(fileURLWithPath: bundlePath)
+            let resourceURLs = try FileManager.default.contentsOfDirectory(at: bundleURL, includingPropertiesForKeys: nil)
+            
+            let videoURLs = resourceURLs.filter { url in
+                let pathExtension = url.pathExtension.lowercased()
+                return videoExtensions.contains(pathExtension)
+            }
+            
+            print("Found \(videoURLs.count) bundled videos: \(videoURLs.map { $0.lastPathComponent })")
+            
+            // Check which bundled videos are already in the library
+            let existingVideoNames = Set(videos.map { $0.url.lastPathComponent })
+            
+            // Add any missing bundled videos to the end of the list (before user videos)
+            for videoURL in videoURLs {
+                let videoName = videoURL.lastPathComponent
+                
+                // Only add if not already in library
+                if !existingVideoNames.contains(videoName) {
+                    do {
+                        let wallpapersDir = try getWallpapersDirectory()
+                        let destinationURL = wallpapersDir.appendingPathComponent(videoName)
+                        
+                        // Copy if it doesn't exist in destination
+                        if !FileManager.default.fileExists(atPath: destinationURL.path) {
+                            try FileManager.default.copyItem(at: videoURL, to: destinationURL)
+                        }
+                        
+                        // Add to library (this will add to the end, after existing videos)
+                        addVideo(destinationURL)
+                        print("Added bundled video: \(videoName)")
+                    } catch {
+                        print("Error copying bundled video \(videoName): \(error)")
+                    }
+                }
+            }
+            
+        } catch {
+            print("Error loading bundled videos: \(error)")
+        }
+    }
+    
+    private func getWallpapersDirectory() throws -> URL {
+        guard let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            throw NSError(domain: "VideoLibraryManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not find Application Support directory."])
+        }
+
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "com.yourcompany.Wallify"
+        let appDirectoryURL = appSupportURL.appendingPathComponent(bundleIdentifier)
+        let wallpapersDirectoryURL = appDirectoryURL.appendingPathComponent("Wallpapers")
+
+        if !FileManager.default.fileExists(atPath: wallpapersDirectoryURL.path) {
+            try FileManager.default.createDirectory(at: wallpapersDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        }
+
+        return wallpapersDirectoryURL
     }
 } 

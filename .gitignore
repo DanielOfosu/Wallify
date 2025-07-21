@@ -141,4 +141,9 @@ Build/
 
 # But keep important build files
 !BUILD-README.md
-!build/README-RELEASE.md 
+!build/README-RELEASE.md
+
+# Build and diagnostic scripts (should not be committed)
+build_installer.sh
+diagnose_app.sh
+PEXELS_MVP_IMPLEMENTATION.md 
