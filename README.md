@@ -74,7 +74,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Roadmap
 
-- Lockscreen implementation
-- Menu bar only implementation
-- CPU/Memory optimiztion
-- Communicate why extended privileges are needed (Setting system wallpaper) in-app, instead of on first launch
+- [] Lockscreen implementation
+- [] Menu bar only implementation
+- [] CPU/Memory optimiztion
+- [] Communicate why extended privileges are needed (Setting system wallpaper) in-app, instead of on first launch
+- [] Revamp UI
+- [] Additional default wallpapers
+- [] Homepage
+- [] New Icon
